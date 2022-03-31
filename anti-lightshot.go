@@ -12,6 +12,8 @@ import (
 	"C"
 )
 import (
+	"bufio"
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -19,8 +21,10 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os/exec"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/schollz/progressbar/v3"
 )
@@ -72,6 +76,29 @@ func generateRandomImageID() string {
 	return newImageId
 }
 
+func getPageHTML(url string, timeout time.Duration) (content []byte, err error) {
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+
+	ctx, cancel_func := context.WithTimeout(context.Background(), timeout)
+	request = request.WithContext(ctx)
+
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		cancel_func()
+		return nil, err
+	}
+
+	return ioutil.ReadAll(response.Body)
+}
+
 func downloadImageByURL(URL string) error {
 	//Get the response bytes from the url
 	URL = eliminateNewLineCrap(URL)
@@ -102,66 +129,81 @@ func downloadImageByURL(URL string) error {
 	return nil
 }
 
-func getPageHTML(url string) string {
-	// return doc.FullText()
-	// resp, err := http.Get(url)
-	// fmt.Println(resp.ContentLength)
-	// resp.Header.Add("Accept", "application/xml")
-	// resp.Header.Add("Content-Type", "application/xml; charset=utf-8")
-	// if err != nil {
-	// 	// handle error
-	// }
-	// defer resp.Body.Close()
+func getActualImageLink(pathToHTML string) string {
+	var imageURL string
+	var parsedHTML []string
 
-	// htmlbody, err := ioutil.ReadAll(resp.Body)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	file, _ := os.Open(pathToHTML)
+	defer file.Close()
 
-	return "htmlbody"
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		parsedHTML = append(parsedHTML, scanner.Text())
+		if strings.Contains(scanner.Text(), "https://i.imgur.com/") {
+			imageURL = scanner.Text()
+			break
+		}
+	}
+
+	//imageURL, _ = trimStringBetweenTwo(imageURL, "src=", " crossorigin=")
+	fmt.Print("actual image link: ")
+	fmt.Println(imageURL)
+	// imageURL = imageURL[1:]
+	// imageURL = imageURL[:len(imageURL)-1]
+
+	return imageURL
+}
+
+func downloadUsingWget(url string) {
+	url = eliminateNewLineCrap(url)
+	downloadLightshotCommand := exec.Command("wget", url)
+	_, err := downloadLightshotCommand.Output()
+	if err != nil {
+		fmt.Println("error downloading file")
+	}
+}
+
+func checkIfFileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	if !os.IsExist(err) {
+		checkIfFileExists(filename)
+	}
+	return os.IsExist(err) && checkIfFileExists(filename)
 }
 
 func downloadImageByLightshotID(imageID string) error {
 	// 0. create image URL
+	imageID = eliminateNewLineCrap(imageID)
 	var imageLightshotURL = "https://prnt.sc/" + imageID
 
-	// 1. parse the HTML page
-	res, err := http.Get(imageLightshotURL)
+	// 1. get file with certain ID
+	var isLightshotHacked = false
+	downloadLightshotCommand := exec.Command("wget", imageLightshotURL)
+	_, err := downloadLightshotCommand.Output()
 	if err != nil {
-		// handle error
+		fmt.Println("error downloading file")
+	} else if err == nil {
+		for {
+			_, err := os.Stat(imageID)
+			if !os.IsExist(err) {
+				break
+			}
+		}
+
+		isLightshotHacked = true
 	}
-	defer res.Body.Close()
 
-	htmlbody, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
+	// 2. read their crap
+	if isLightshotHacked {
+		downloadImageByURL(getActualImageLink(imageID))
+		e := os.Remove(imageID)
+		if e != nil {
+			fmt.Println("file does not exit")
+			os.Exit(3)
+		}
 	}
-
-	fmt.Printf("%s\n", htmlbody)
-
-	// //Get the response bytes from the url
-	// var fullImageURL = "https://prnt.sc/" + imageID
-	// response, err := http.Get(fullImageURL)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer response.Body.Close()
-
-	// if response.StatusCode != 200 {
-	// 	return errors.New("Received non 200 response code")
-	// }
-	// //Create a empty file
-	// file, err := os.Create(pathToDownloadedImages + imageID + ".png")
-	// if err != nil {
-	// 	return err
-	// }
-	// defer file.Close()
-
-	// //Write the bytes to the fiel
-	// _, err = io.Copy(file, response.Body)
-	// if err != nil {
-	// 	return err
-	// }
 
 	return nil
 }
@@ -191,12 +233,17 @@ func main() {
 	howManyImages := flag.Int("howmanyimages", 0, "specify how many images to download")
 	specifyImageURL := flag.String("imageurl", "", "you can specify image url here, e.g. --imageurl https://i.imgur.com/y5Onqkp.png")
 	readPageHTML := flag.String("readhtml", "", "read page html of the specified address, e.g. --readhtml https://i.imgur.com/y5Onqkp.png")
+	getImageLink := flag.String("getimglink", "", "get actual image link, e.g. --getimglink https://prnt.sc/2a93m0")
 	//slowMode := flag.Bool("slowmode", false, "use slowmode to pre-define image id before downloading them")
 	flag.Parse()
 
 	if *readPageHTML != "" {
-		fmt.Printf("%s\n", string(getPageHTML(*readPageHTML)))
+		pageHTML, _ := getPageHTML(eliminateNewLineCrap(*readPageHTML), 10*time.Second)
+		fmt.Printf("%s\n", string(pageHTML))
 		os.Exit(3)
+	} else if *getImageLink != "" {
+		downloadUsingWget(*getImageLink)
+		fmt.Println(getActualImageLink((*getImageLink)[16 : len(*getImageLink)-1]))
 	} else if *specifyImageURL != "" {
 		fmt.Print("you provided image url: ")
 		fmt.Println(*specifyImageURL)
