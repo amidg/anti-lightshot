@@ -129,6 +129,20 @@ func downloadImageByURL(URL string) error {
 	return nil
 }
 
+func GetStringInBetweenTwoString(str string, startS string, endS string) (result string, found bool) {
+	s := strings.Index(str, startS)
+	if s == -1 {
+		return result, false
+	}
+	newS := str[s+len(startS):]
+	e := strings.Index(newS, endS)
+	if e == -1 {
+		return result, false
+	}
+	result = newS[:e]
+	return result, true
+}
+
 func getActualImageLink(pathToHTML string) string {
 	var imageURL string
 	var parsedHTML []string
@@ -146,6 +160,8 @@ func getActualImageLink(pathToHTML string) string {
 			break
 		}
 	}
+
+	fmt.Println(parsedHTML)
 
 	//imageURL, _ = trimStringBetweenTwo(imageURL, "src=", " crossorigin=")
 	fmt.Print("actual image link: ")
