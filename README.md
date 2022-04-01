@@ -4,6 +4,11 @@ anti-lightshot -> app that shows how lightshot disrespects the privacy of its us
 # Dependencies:
 **Linux:** none \
 **Windows:** GNU wget required for Win32 \
-**macOS / darwin**: install wget using Homebrew \
+**macOS / darwin**: install wget using Homebrew
+
+# Compiled builds:
+**Linux**: amd64 \
+**Windows**: amd64 \
+**macOS**: Intel (amd64) + Apple Silicon (arm64)
 
 Get Windows GNU wget here: https://sourceforge.net/projects/gnuwin32/files/wget/1.11.4-1/wget-1.11.4-1-setup.exe/download?use_mirror=excellmedia
