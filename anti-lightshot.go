@@ -113,8 +113,15 @@ func checkIfFileExists(filename string) bool {
 }
 
 func getPageHTML(url string) (content string) {
+	// download file using wget
 	downloadUsingWget(url)
+
+	// read file content
 	filecontent, _ := readfile(eliminateNewLineCrap(url[16:]))
+
+	// delete file
+	os.Remove(eliminateNewLineCrap(url[16:]))
+
 	return filecontent
 }
 
