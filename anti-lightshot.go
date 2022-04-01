@@ -64,19 +64,23 @@ func trimStringBetweenTwo(input string, startS string, endS string) (result stri
 	return result, true
 }
 
-func generateRandomImageID() string {
+func generateRandomImageID() (string, int) {
 	var newImageId string
+	var iter = 0
 	for {
+		newImageId = ""
 		for i := 0; i < 6; i++ {
 			newImageId = newImageId + imageIDcharacters[rand.Intn(len(imageIDcharacters))]
 		}
 
 		if checkEntireLogFile(newImageId) {
 			break
+		} else {
+			iter++
 		}
 	}
 
-	return newImageId
+	return newImageId, iter
 }
 
 func downloadUsingWget(url string) {
@@ -222,7 +226,7 @@ func checkEntireLogFile(input string) (nomatch bool) {
 	nomatch = true
 
 	for i := 0; i < len(currentlog); i++ {
-		nomatch = nomatch && (currentlog[i] == input)
+		nomatch = nomatch && !(currentlog[i] == input)
 	}
 
 	return nomatch
@@ -232,8 +236,13 @@ func predefineImageBuffer(imagecount int) {
 	_, logSlice := readfile(pathToLogFile)
 	currentlog := make([]string, len(logSlice))
 	copy(currentlog, logSlice)
+
+	var newImageID string
+	//var iterationsNeeded int
+
 	for i := 0; i < imagecount; i++ {
-		newImageID = generateRandomImageID()
+		newImageID, _ = generateRandomImageID()
+
 		logLength := len(currentlog)
 		switch logLength {
 		case 0:

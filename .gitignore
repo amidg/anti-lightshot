@@ -3,4 +3,4 @@
 *.jpeg
 *.png
 *.jpg
-*.txt
+./downloadlog.txt
