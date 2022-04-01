@@ -169,33 +169,11 @@ func GetStringInBetweenTwoString(str string, startS string, endS string) (result
 	return result, true
 }
 
-func getActualImageLink(pathToHTML string) string {
-	var imageURL string
-	var parsedHTML []string
+func getActualImageLink(parsedhtml string) string {
+	// 1. get string between those values
+	imageURL, _ := trimStringBetweenTwo(parsedhtml, "https://i.imgur.com/", " ")
 
-	file, _ := os.Open(pathToHTML)
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-
-	for scanner.Scan() {
-		parsedHTML = append(parsedHTML, scanner.Text())
-		if strings.Contains(scanner.Text(), "https://i.imgur.com/") {
-			imageURL = scanner.Text()
-			break
-		}
-	}
-
-	fmt.Println(parsedHTML)
-
-	//imageURL, _ = trimStringBetweenTwo(imageURL, "src=", " crossorigin=")
-	fmt.Print("actual image link: ")
-	fmt.Println(imageURL)
-	// imageURL = imageURL[1:]
-	// imageURL = imageURL[:len(imageURL)-1]
-
-	return imageURL
+	return "https://i.imgur.com/" + imageURL[:len(imageURL)-3]
 }
 
 func downloadImageByLightshotID(imageID string) error {
@@ -266,8 +244,7 @@ func main() {
 		fmt.Printf("%s\n", getPageHTML(eliminateNewLineCrap(*readPageHTML)))
 		os.Exit(3)
 	} else if *getImageLink != "" {
-		downloadUsingWget(*getImageLink)
-		fmt.Println(getActualImageLink((*getImageLink)[16 : len(*getImageLink)-1]))
+		fmt.Println(getActualImageLink(getPageHTML(eliminateNewLineCrap(*getImageLink))))
 	} else if *specifyImageURL != "" {
 		fmt.Print("you provided image url: ")
 		fmt.Println(*specifyImageURL)
