@@ -128,6 +128,10 @@ func getPageHTML(url string) (content string) {
 func downloadImageByURL(URL string, lightshotID string) error {
 	//Get the response bytes from the url
 	URL = eliminateNewLineCrap(URL)
+	imageFormat := URL[len(URL)-4:]
+	if imageFormat[0] != '.' {
+		imageFormat = "." + imageFormat
+	}
 
 	response, err := http.Get(URL)
 	if err != nil {
@@ -139,7 +143,7 @@ func downloadImageByURL(URL string, lightshotID string) error {
 		return errors.New("Received non 200 response code")
 	}
 	//Create a empty file
-	file, err := os.Create(pathToDownloadedImages + lightshotID + ".png")
+	file, err := os.Create(pathToDownloadedImages + lightshotID + imageFormat)
 	if err != nil {
 		return err
 	}
@@ -170,12 +174,16 @@ func GetStringInBetweenTwoString(str string, startS string, endS string) (result
 
 func getActualImageLink(parsedhtml string) (string, bool) {
 	// 1. get string between those values
+	/*
+		example #1: <img class="no-click screenshot-image" src="https://image.prntscr.com/image/74j1YlFTSn61-yVmpszTlw.png" crossorigin="anonymous" alt="Lightshot screenshot" id="screenshot-image" image-id="r68h04">
+		example #2: https://i.imgur.com/
+	*/
 	imageURL, isFound := trimStringBetweenTwo(parsedhtml, "https://i.imgur.com/", " ")
 
 	if len(imageURL) < 6 || !isFound {
 		imageURL = ""
 	} else if isFound {
-		imageURL = ("https://i.imgur.com/" + imageURL[:len(imageURL)-3])
+		imageURL = ("https://i.imgur.com/" + imageURL[1:len(imageURL)-3])
 	}
 
 	return imageURL, isFound
