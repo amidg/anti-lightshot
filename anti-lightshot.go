@@ -66,8 +66,14 @@ func trimStringBetweenTwo(input string, startS string, endS string) (result stri
 
 func generateRandomImageID() string {
 	var newImageId string
-	for i := 0; i < 6; i++ {
-		newImageId = newImageId + imageIDcharacters[rand.Intn(len(imageIDcharacters))]
+	for {
+		for i := 0; i < 6; i++ {
+			newImageId = newImageId + imageIDcharacters[rand.Intn(len(imageIDcharacters))]
+		}
+
+		if checkEntireLogFile(newImageId) {
+			break
+		}
 	}
 
 	return newImageId
@@ -183,7 +189,7 @@ func getActualImageLink(parsedhtml string) (string, bool) {
 	if len(imageURL) < 6 || !isFound {
 		imageURL = ""
 	} else if isFound {
-		imageURL = ("https://i.imgur.com/" + imageURL[1:len(imageURL)-3])
+		imageURL = ("https://i.imgur.com/" + imageURL[:len(imageURL)-3])
 	}
 
 	return imageURL, isFound
@@ -209,6 +215,19 @@ func downloadImageByLightshotID(imageID string) (bool, error) {
 	return isFound, error
 }
 
+func checkEntireLogFile(input string) (nomatch bool) {
+	_, logSlice := readfile(pathToLogFile)
+	currentlog := make([]string, len(logSlice))
+	copy(currentlog, logSlice)
+	nomatch = true
+
+	for i := 0; i < len(currentlog); i++ {
+		nomatch = nomatch && (currentlog[i] == input)
+	}
+
+	return nomatch
+}
+
 func predefineImageBuffer(imagecount int) {
 	_, logSlice := readfile(pathToLogFile)
 	currentlog := make([]string, len(logSlice))
@@ -221,7 +240,7 @@ func predefineImageBuffer(imagecount int) {
 			predefinedImageBuffer = append(predefinedImageBuffer, newImageID)
 			previousImageID = newImageID
 		default:
-			if newImageID != previousImageID && newImageID != "" && (newImageID != currentlog[i] || currentlog[i] == "") {
+			if newImageID != previousImageID && newImageID != "" {
 				predefinedImageBuffer = append(predefinedImageBuffer, newImageID)
 				previousImageID = newImageID
 			} else {
