@@ -13,18 +13,15 @@ import (
 )
 import (
 	"bufio"
-	"context"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os/exec"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/schollz/progressbar/v3"
 )
@@ -76,27 +73,49 @@ func generateRandomImageID() string {
 	return newImageId
 }
 
-func getPageHTML(url string, timeout time.Duration) (content []byte, err error) {
-	request, err := http.NewRequest("GET", url, nil)
+func downloadUsingWget(url string) {
+	url = eliminateNewLineCrap(url)
+	downloadLightshotCommand := exec.Command("wget", url)
+	_, err := downloadLightshotCommand.Output()
 	if err != nil {
-		return
+		fmt.Println("error downloading file")
+	}
+}
+
+func readfile(filename string) (string, []string) {
+	var contentAsSingleString string
+	var contentLineByLine []string
+
+	file, _ := os.Open(filename)
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		contentLineByLine = append(contentLineByLine, scanner.Text())
+		contentAsSingleString = contentAsSingleString + (scanner.Text() + "\n")
 	}
 
-	ctx, cancel_func := context.WithTimeout(context.Background(), timeout)
-	request = request.WithContext(ctx)
+	return contentAsSingleString, contentLineByLine
+}
 
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return
+func checkIfFileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	for {
+		_, err = os.Stat(filename)
+		if os.IsExist(err) {
+			break
+		}
+		fmt.Println("waiting for file")
 	}
-	defer response.Body.Close()
+	return true
+}
 
-	if response.StatusCode != 200 {
-		cancel_func()
-		return nil, err
-	}
-
-	return ioutil.ReadAll(response.Body)
+func getPageHTML(url string) (content string) {
+	downloadUsingWget(url)
+	filecontent, _ := readfile(eliminateNewLineCrap(url[16:]))
+	return filecontent
 }
 
 func downloadImageByURL(URL string) error {
@@ -172,23 +191,6 @@ func getActualImageLink(pathToHTML string) string {
 	return imageURL
 }
 
-func downloadUsingWget(url string) {
-	url = eliminateNewLineCrap(url)
-	downloadLightshotCommand := exec.Command("wget", url)
-	_, err := downloadLightshotCommand.Output()
-	if err != nil {
-		fmt.Println("error downloading file")
-	}
-}
-
-func checkIfFileExists(filename string) bool {
-	_, err := os.Stat(filename)
-	if !os.IsExist(err) {
-		checkIfFileExists(filename)
-	}
-	return os.IsExist(err) && checkIfFileExists(filename)
-}
-
 func downloadImageByLightshotID(imageID string) error {
 	// 0. create image URL
 	imageID = eliminateNewLineCrap(imageID)
@@ -254,8 +256,7 @@ func main() {
 	flag.Parse()
 
 	if *readPageHTML != "" {
-		pageHTML, _ := getPageHTML(eliminateNewLineCrap(*readPageHTML), 10*time.Second)
-		fmt.Printf("%s\n", string(pageHTML))
+		fmt.Printf("%s\n", getPageHTML(eliminateNewLineCrap(*readPageHTML)))
 		os.Exit(3)
 	} else if *getImageLink != "" {
 		downloadUsingWget(*getImageLink)
