@@ -1,17 +1,6 @@
 package main
 
 import (
-
-	//required to read image from file
-
-	_ "image/png"
-	"os"
-
-	//needed to draw text on image
-
-	"C"
-)
-import (
 	"bufio"
 	"errors"
 	"flag"
@@ -121,7 +110,7 @@ func checkIfFileExists(filename string) bool {
 	}
 	return true
 }
-
+~/.local/share/konsole/
 func getPageHTML(url string) (content string) {
 	// download file using wget
 	downloadUsingWget(url)
