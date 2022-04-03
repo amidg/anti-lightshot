@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -110,7 +111,7 @@ func checkIfFileExists(filename string) bool {
 	}
 	return true
 }
-~/.local/share/konsole/
+
 func getPageHTML(url string) (content string) {
 	// download file using wget
 	downloadUsingWget(url)
