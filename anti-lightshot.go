@@ -263,14 +263,6 @@ func recordDownloadedImageID(imageID string) {
 	logfile.Close()
 }
 
-/*
-1. Build Linux executable
-	go build -o anti_lightshot anti-lightshot.go
-
-2. Build Windows executable
-	g++ -pthread main.cpp wolfimggen.a -o wolfwisdomgenerator
-*/
-
 func main() {
 	howManyImages := flag.Int("howmanyimages", 0, "specify how many images to download")
 	specifyImageURL := flag.String("imageurl", "", "you can specify image url here, e.g. --imageurl https://i.imgur.com/y5Onqkp.png")
