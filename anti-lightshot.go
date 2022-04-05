@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/schollz/progressbar/v3"
 )
@@ -57,6 +58,7 @@ func trimStringBetweenTwo(input string, startS string, endS string) (result stri
 func generateRandomImageID() (string, int) {
 	var newImageId string
 	var iter = 0
+	rand.Seed(time.Now().UnixNano())
 	for {
 		newImageId = ""
 		for i := 0; i < 6; i++ {
